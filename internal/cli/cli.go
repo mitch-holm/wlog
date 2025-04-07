@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/fatih/color"
 	"github.com/mholm/wlog/internal/storage"
 	"github.com/mholm/wlog/internal/task"
 	"github.com/spf13/cobra"
@@ -68,7 +69,11 @@ func (c *CLI) newAddCmd() *cobra.Command {
 				return err
 			}
 
-			fmt.Printf("Added task: [%d] %s\n", newTask.Importance, newTask.Description)
+			importanceColor := c.getImportanceColor(newTask.Importance)
+			fmt.Printf("Added task: %s %s\n", 
+				importanceColor.Sprintf("[%d]", newTask.Importance),
+				newTask.Description,
+			)
 			return nil
 		},
 	}
@@ -95,6 +100,9 @@ func (c *CLI) newListCmd() *cobra.Command {
 				return err
 			}
 
+			// Sort tasks by importance and date
+			task.SortByImportanceAndDate(tasks)
+
 			// Filter by minimum importance if specified
 			if minImportance > 0 {
 				filteredTasks := make([]*task.Task, 0)
@@ -106,12 +114,19 @@ func (c *CLI) newListCmd() *cobra.Command {
 				tasks = filteredTasks
 			}
 
-			// TODO: Implement filtering by period
+			// Apply top N filter if specified
+			if top > 0 && top < len(tasks) {
+				tasks = tasks[:top]
+			}
+
+			// Print tasks with colors
 			for _, t := range tasks {
-				fmt.Printf("[%d] %s (created: %s)\n", 
-					t.Importance, 
+				importanceColor := c.getImportanceColor(t.Importance)
+				dateColor := color.New(color.FgHiBlack)
+				fmt.Printf("%s %s %s\n", 
+					importanceColor.Sprintf("[%d]", t.Importance),
 					t.Description,
-					t.CreatedAt.Format("2006-01-02 15:04"),
+					dateColor.Sprintf("(%s)", t.CreatedAt.Format("2006-01-02 15:04")),
 				)
 			}
 
@@ -124,6 +139,24 @@ func (c *CLI) newListCmd() *cobra.Command {
 	cmd.Flags().IntVarP(&minImportance, "min-importance", "m", 0, "Show only tasks with at least this importance (1-5)")
 
 	return cmd
+}
+
+// getImportanceColor returns a color based on the task's importance
+func (c *CLI) getImportanceColor(importance task.Importance) *color.Color {
+	switch importance {
+	case 5:
+		return color.New(color.FgRed, color.Bold)
+	case 4:
+		return color.New(color.FgYellow, color.Bold)
+	case 3:
+		return color.New(color.FgGreen)
+	case 2:
+		return color.New(color.FgCyan)
+	case 1:
+		return color.New(color.FgBlue)
+	default:
+		return color.New(color.FgWhite)
+	}
 }
 
 // newHelpCmd creates the help command

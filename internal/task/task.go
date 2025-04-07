@@ -1,6 +1,7 @@
 package task
 
 import (
+	"sort"
 	"time"
 )
 
@@ -43,4 +44,21 @@ func NewTask(description string, importance Importance) *Task {
 // generateID creates a unique ID for the task
 func generateID() string {
 	return time.Now().Format("20060102150405")
+}
+
+// ByImportanceAndDate implements sort.Interface for []*Task
+type ByImportanceAndDate []*Task
+
+func (t ByImportanceAndDate) Len() int      { return len(t) }
+func (t ByImportanceAndDate) Swap(i, j int) { t[i], t[j] = t[j], t[i] }
+func (t ByImportanceAndDate) Less(i, j int) bool {
+	if t[i].Importance != t[j].Importance {
+		return t[i].Importance > t[j].Importance // Higher importance first
+	}
+	return t[i].CreatedAt.After(t[j].CreatedAt) // Most recent first within same importance
+}
+
+// SortByImportanceAndDate sorts tasks by importance (descending) and creation date (descending)
+func SortByImportanceAndDate(tasks []*Task) {
+	sort.Sort(ByImportanceAndDate(tasks))
 } 
