@@ -16,7 +16,7 @@ echo "Installing to ~/bin..."
 mv wlog ~/bin/
 
 # Make sure the bin directory is in PATH
-if [[ ":"$PATH":" != *":$HOME/bin:"* ]]; then
+if ! echo "$PATH" | grep -q "$HOME/bin"; then
     echo "Adding ~/bin to PATH in .zshrc..."
     echo 'export PATH="$HOME/bin:$PATH"' >> ~/.zshrc
     echo "Please restart your terminal or run 'source ~/.zshrc' to update PATH"
